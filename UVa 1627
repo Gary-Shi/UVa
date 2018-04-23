@@ -1,0 +1,227 @@
+#include <iostream>
+#include <cstdio>
+#include <iomanip>
+#include <algorithm>
+#include <cstring>
+#include <cstdlib>
+#include <vector>
+#include <limits.h>
+#include <float.h>
+#include <sstream>
+#include <cmath>
+
+using namespace std;
+
+int n = 0;
+bool g[105][105] = {};
+bool record[105] = {};
+
+typedef vector<int> Vector;
+Vector g0;
+
+class Object
+{
+	public:
+		Vector v1, v2;
+		int len1, len2;
+		Object(Vector &_v1, Vector &_v2) : v1(_v1), v2(_v2)
+		{
+			len1 = v1.size();
+			len2 = v2.size();
+		}
+};
+
+vector<Object> obj;
+int objNum = 0;
+
+void Dfs(int i0)
+{
+	for (int i = 1; i <= n; ++i)
+	{
+		if (!record[i] && i != i0 && !(g[i][i0] && g[i0][i]))
+		{
+			record[i] = true;
+			g0.push_back(i);
+			Dfs(i);
+		}
+	}
+	return;
+}
+
+bool Partition()
+{
+	Vector v1, v2;
+	v1.push_back(g0[0]);
+	g0[0] = -1;
+	int leftNum = g0.size() - 1;
+	int len0 = g0.size();
+	while (leftNum)
+	{
+		for (int i = 0; i < v1.size(); ++i)
+		{
+			for (int j = 0; j < len0; ++j)
+			{
+				if (g0[j] != -1 && !(g[v1[i]][g0[j]] && g[g0[j]][v1[i]]))
+				{
+					v2.push_back(g0[j]);
+					g0[j] = -1;
+					--leftNum;
+				}
+			}
+		}
+		for (int i = 0; i < v2.size(); ++i)
+		{
+			for (int j = 0; j < len0; ++j)
+			{
+				if (g0[j] != -1 && !(g[v2[i]][g0[j]] && g[g0[j]][v2[i]]))
+				{
+					v1.push_back(g0[j]);
+					g0[j] = -1;
+					--leftNum;
+				}
+			}
+		}
+	}
+	obj.push_back(Object(v1, v2));
+	++objNum;
+	int len1 = v1.size(), len2 = v2.size();
+	for (int i = 0; i < len1; ++i)
+	{
+		for (int j = 0; j < len1; ++j)
+		{
+			if (i != j && !(g[v1[i]][v1[j]] && g[v1[j]][v1[i]]))
+				return false;
+		}
+	}
+	for (int i = 0; i < len2; ++i)
+	{
+		for (int j = 0; j < len2; ++j)
+		{
+			if (i != j && !(g[v2[i]][v2[j]] && g[v2[j]][v2[i]]))
+				return false;
+		}
+	}
+	
+	return true;
+}
+
+int dp[105][105] = {};
+
+bool Dp(int num1, int pos)
+{
+	if (pos == -1)
+	{
+		if (num1 == 0)
+			return true;
+		return false;
+	}
+	if (num1 < 0)
+		return false;
+	if (dp[num1][pos] != -1)
+		return dp[num1][pos];
+	if (Dp(num1 - obj[pos].len1, pos - 1) || Dp(num1 - obj[pos].len2, pos - 1))
+	{
+		dp[num1][pos] = 1;
+		return true;
+	}
+	dp[num1][pos] = 0;
+	return false;
+}
+
+int main()
+{
+	//freopen("testout.txt", "w", stdout);
+	int t = 0;
+	cin >> t;
+	for (int k = 0; k < t; ++k)
+	{
+		if (k != 0)
+			cout << endl;
+		cin >> n;
+		for (int i = 1; i <= n; ++i)
+			memset(g[i], false, sizeof(g[i]));
+		for (int i = 1; i <= n; ++i)
+		{
+			int a = 0;
+			while (cin >> a)
+			{
+				if (a == 0)
+					break;
+				g[i][a] = true;
+			}
+		}
+		memset(record, false, sizeof(record));
+		objNum = 0;
+		obj.clear();
+		int flag = 0;
+		for (int i = 1; i <= n; ++i)
+		{
+			if (!record[i])
+			{
+				record[i] = true;
+				g0.clear();
+				g0.push_back(i);
+				Dfs(i);
+				if (!Partition())
+				{
+					cout << "No solution" << endl;
+					flag = 1;
+					break;
+				}
+			}
+		}
+		if (flag == 1)
+			continue;
+		for (int i = 0; i <= 100; ++i)
+			memset(dp[i], -1, sizeof(dp[i]));
+		int num1 = n / 2;
+		while (num1 > 0 && !Dp(num1, objNum - 1))
+			--num1;
+		bool recordt[105] = {};
+		int num10 = num1;
+		memset(recordt, false, sizeof(recordt));
+		for (int pos = objNum - 1; pos >= 0; --pos)
+		{
+			if (pos == 0 && num1 - obj[pos].len1 == 0)
+			{
+				num1 -= obj[pos].len1;
+				for (int i = 0; i < obj[pos].len1; ++i)
+					recordt[(obj[pos].v1)[i]] = true;
+			}
+			else if (pos == 0 && num1 - obj[pos].len2 == 0)
+			{
+				num1 -= obj[pos].len2;
+				for (int i = 0; i < obj[pos].len2; ++i)
+					recordt[(obj[pos].v2)[i]] = true;
+			}
+			else if (num1 - obj[pos].len1 >= 0 && dp[num1 - obj[pos].len1][pos - 1] == 1)
+			{
+				num1 -= obj[pos].len1;
+				for (int i = 0; i < obj[pos].len1; ++i)
+					recordt[(obj[pos].v1)[i]] = true;
+			}
+			else if (num1 - obj[pos].len2 >= 0 && dp[num1 - obj[pos].len2][pos - 1] == 1)
+			{
+				num1 -= obj[pos].len2;
+				for (int i = 0; i < obj[pos].len2; ++i)
+					recordt[(obj[pos].v2)[i]] = true;
+			}
+		}
+		cout << num10;
+		for (int i = 1; i <= n; ++i)
+		{
+			if (recordt[i])
+				cout << " " << i;
+		}
+		cout << endl;
+		cout << n - num10;
+		for (int i = 1; i <= n; ++i)
+		{
+			if (!recordt[i])
+				cout << " " << i;
+		}
+		cout << endl;
+	}
+	
+	return 0;
+}
