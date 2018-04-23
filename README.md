@@ -1,2 +1,1 @@
-# Test
-Just for test
+Accepted codes of UVa problems
