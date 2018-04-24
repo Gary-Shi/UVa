@@ -1,0 +1,143 @@
+#include <iostream>
+#include <cstdio>
+#include <iomanip>
+#include <algorithm>
+#include <cstring>
+#include <cstdlib>
+#include <map>
+#include <stack>
+#include <limits.h>
+#include <float.h>
+#include <sstream>
+#include <cmath>
+
+using namespace std;
+
+int n = 0, m = 0;
+int mod[10][200] = {};
+int num[10] = {6, 2, 5, 5, 4, 5, 6, 3, 7, 6};
+
+class String
+{
+	public:
+		string s;
+		String()
+		{
+		}
+		String(const string _s) : s(_s)
+		{
+		}
+		bool operator <(const String &st)
+		{
+			if (s == "-1" || s == "-2")
+				return true;
+			else if (st.s == "-1" || st.s == "-2")
+				return false;
+			else if (s.length() < (st.s).length())
+				return true;
+			else if (s.length() == (st.s).length() && s < st.s)
+				return true;
+			return false;
+		}
+		void operator =(string ss)
+		{
+			s = ss;
+		}
+};
+
+int dp[55][3005] = {};//³¤¶ÈÎªi£¬Ä£Îªj 
+
+void Dp()
+{
+	for (int lenNow = 0; lenNow <= n / 2; ++lenNow)
+	{
+		for (int modNow = 0; modNow < m; ++modNow)
+		{
+			if (dp[lenNow][modNow] <= n)
+			{
+				for (int i = 9; i >= 0; --i)
+				{
+					if (i == 0 && dp[lenNow][modNow] + num[i] == n)
+						continue;
+					if (dp[lenNow][modNow] + num[i] <= n)
+					{
+						int &next = dp[lenNow + 1][(modNow + mod[i][lenNow]) % m];
+						next = min(next, dp[lenNow][modNow] + num[i]);
+					}
+				}
+			}
+		}
+	}
+}
+
+int main()
+{
+	//freopen("testout.txt", "w", stdout);
+	int cases = 0;
+	while (cin >> n)
+	{
+		if (n == 0)
+			break;
+		++cases;
+		cin >> m;
+		for (int i = 0; i < 10; ++i)
+		{
+			mod[i][0] = i % m;
+			for (int j = 1; j <= 100; ++j)
+				mod[i][j] = (mod[i][j - 1] * 10) % m;
+		}
+		for (int i = 0; i <= n / 2; ++i)
+		{
+			for (int j = 0; j <= m; ++j)
+			{
+				dp[i][j] = 10000;
+			}
+		}
+		dp[0][0] = 0;
+		Dp();
+		int len = 0;
+		for (int i = 1; i <= n / 2; ++i)
+		{
+			if (dp[i][0] <= n)
+				len = max(len, i);
+		}
+		if (len == 0)
+		{
+			if (n >= 6)
+				cout << "Case " << cases << ": 0" << endl;
+			else
+				cout << "Case " << cases << ": -1" << endl;
+			continue;
+		}
+		int modNow = 0;
+		string r;
+		while (len > 0)
+		{
+			//cout << r << endl;
+			for (int i = 9; i >= 0; --i)
+			{
+				//cout << dp[len - 1][(modNow - mod[i][len - 1] + m) % m] << endl;
+				if (dp[len - 1][(modNow - mod[i][len - 1] + m) % m] >= 0 && 
+				dp[len - 1][(modNow - mod[i][len - 1] + m) % m] <= n && 
+				dp[len - 1][(modNow - mod[i][len - 1] + m) % m] + num[i] <= n)
+				{
+					//cout << len << i << endl;
+					//cout << dp[len - 1][(modNow - mod[i][len - 1] + m) % m] << num[i] << dp[len][modNow];
+					modNow = (modNow - mod[i][len - 1] + m) % m;
+					--len;
+					n -= num[i];
+					r.push_back((char)(i + 48));
+					break;
+				}
+			}
+		}
+		int pos = r.find_first_not_of("0");
+		if (pos == -1)
+			cout << "Case " << cases << ": 0" << endl;
+		else
+			cout << "Case " << cases << ": " << r.substr(pos, r.length() - pos) << endl;
+		//cout << dp[0][0] << dp[1][0] << dp[2][0];
+	}
+	
+	return 0;
+}
