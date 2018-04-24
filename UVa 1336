@@ -1,0 +1,141 @@
+#include <iostream>
+#include <cstdio>
+#include <iomanip>
+#include <algorithm>
+#include <cstring>
+#include <cstdlib>
+#include <map>
+#include <stack>
+#include <limits.h>
+#include <float.h>
+#include <sstream>
+#include <cmath>
+
+using namespace std;
+
+int n = 0, v = 0, x0 = 0;
+
+template <class T>
+class Point
+{
+	public:
+		int x;
+		int c0;
+		int delta;
+		Point()
+		{
+		}
+		Point(int _x, int _c, int _d) : x(_x), c0(_c), delta(_d)
+		{
+		}
+		bool operator <(const Point &p)
+		{
+			return T()(x, p.x);
+		}
+};
+
+typedef Point<less<int> > PointL;
+typedef Point<greater<int> > PointR;
+PointL pl[1005] = {};
+PointR pr[1005] = {};
+int numl = 0, numr = 0;
+
+double dp[1005][1005][2] = {};
+int sumd[1005][1005] = {};
+double sumcl[1005] = {}, sumcr[1005] = {};
+
+double Dpr(int posl, int posr);
+
+double Dpl(int posl, int posr)
+{
+	if (dp[posl][posr][0] > -1)
+		return dp[posl][posr][0];
+	double &ans = dp[posl][posr][0];
+	ans = DBL_MAX;
+	if (posl > 1)
+		ans = min(ans, 
+		Dpl(posl - 1, posr) + pl[posl - 1].delta * (double)(x0 - pl[posl - 1].x) / v);
+	ans = min(ans, Dpr(posl - 1, posr) + pl[posl - 1].delta * (double)(x0 - pl[posl - 1].x) / v 
+	+ (double)(x0 - pl[posl - 1].x) * 2 / v * sumd[posl - 1][posr]);
+	
+	return ans;
+}
+
+double Dpr(int posl, int posr)
+{
+	if (dp[posl][posr][1] > -1)
+		return dp[posl][posr][1];
+	double &ans = dp[posl][posr][1];
+	ans = DBL_MAX;
+	if (posr > 1)
+		ans = min(ans, 
+		Dpr(posl, posr - 1) + pr[posr - 1].delta * (double)(pr[posr - 1].x - x0) / v);
+	ans = min(ans, Dpl(posl, posr - 1) + pr[posr - 1].delta * (double)(pr[posr - 1].x - x0) / v + 
+		(double)(pr[posr - 1].x - x0) * 2 / v * sumd[posl][posr - 1]);
+	
+	return ans;
+}
+
+int main()
+{
+	freopen("testin.txt", "r", stdin);
+	freopen("testout.txt", "w", stdout);
+	while (cin >> n >> v >> x0)
+	{
+		if (n == 0)
+			break;
+		int xt, ct, dt;
+		int sumcost = 0;
+		numl = numr = 0;
+		for (int i = 0; i < n; ++i)
+		{
+			cin >> xt >> ct >> dt;
+			sumcost += ct;
+			if (xt < x0)
+				pl[numl++] = PointL(xt, ct, dt);
+			else
+				pr[numr++] = PointR(xt, ct, dt);
+		}
+		sort(pl, pl + numl);
+		sort(pr, pr + numr);
+		
+		for (int i = 0; i <= numl; ++i)
+		{
+			for (int j = 0; j <= numr; ++j)
+			{
+				dp[i][j][0] = dp[i][j][1] = -2;
+				sumd[i][j] = 0;
+			}
+		}
+		
+		for (int j = 1; j <= numr; ++j)
+			sumd[0][j] = sumd[0][j - 1] + pr[j - 1].delta;
+		for (int i = 1; i <= numl; ++i)
+		{
+			sumd[i][0] = sumd[i - 1][0] + pl[i - 1].delta;
+			for (int j = 1; j <= numr; ++j)
+				sumd[i][j] = sumd[i][j - 1] + pr[j - 1].delta;
+		}
+		
+		sumcl[numl] = 0;
+		for (int i = numl - 1; i >= 0; --i)
+			sumcl[i] = sumcl[i + 1] + pl[i].delta * (double)(x0 - pl[i].x) / v;
+		sumcr[numr] = 0;
+		for (int i = numr - 1; i >= 0; --i)
+			sumcr[i] = sumcr[i + 1] + pr[i].delta * (double)(pr[i].x - x0) / v;
+		
+		dp[0][0][0] = dp[0][0][1] = 0;
+		for (int i = 1; i <= numl; ++i)
+		{
+			dp[i][0][0] = dp[i][0][1] = (sumcl[0] - sumcl[i]);
+		}
+		for (int i = 1; i <= numr; ++i)
+		{
+			dp[0][i][0] = dp[0][i][1] = (sumcr[0] - sumcr[i]);
+		}
+		cout << min((int)Dpl(numl, numr), (int)Dpr(numl, numr)) + sumcost << endl;
+		//cout << sumcr[1] << pr[0].delta * (double)(pr[0].x - x0) / v;
+	}
+	
+	return 0;
+}
